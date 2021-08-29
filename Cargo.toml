@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+	"cybergrind-core",
+	"cybergrind-ui"
+]
