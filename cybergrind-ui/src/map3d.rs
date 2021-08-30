@@ -1,6 +1,6 @@
 use bevy::{prelude::*, render::texture::ImageType};
 use bevy_mod_picking::PickableBundle;
-use cybergrind_core::Map;
+use cybergrind_core::{Map, Prefab};
 
 pub const BOX_SCALE: f32 = 1.0;
 
@@ -10,6 +10,7 @@ pub fn spawn_map(
 	mut commands: Commands,
 	mut meshes: ResMut<Assets<Mesh>>,
 	mut textures: ResMut<Assets<Texture>>,
+	mut atlases: ResMut<Assets<TextureAtlas>>,
 	mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
 	let box_mesh = meshes.add(Mesh::from(shape::Box::new(1.0, 16.0, 1.0)));
@@ -19,6 +20,24 @@ pub fn spawn_map(
 	)
 	.unwrap();
 	let box_material = materials.add(textures.add(box_texture).into());
+
+	let prefabs_texture = textures.add(
+		Texture::from_buffer(
+			include_bytes!("../assets/prefabs.png"),
+			ImageType::Extension("png"),
+		)
+		.unwrap(),
+	);
+
+	let prefabs_atlas = atlases.add(TextureAtlas::from_grid(
+		prefabs_texture,
+		Vec2::new(16.0, 16.0),
+		1,
+		5,
+	));
+	commands.insert_resource(PrefabAtlas(prefabs_atlas.clone()));
+
+	let prefab_mesh = meshes.add(Mesh::from(shape::Plane { size: 0.75 }));
 
 	let mut pillars = Vec::new();
 	for x in 0..16 {
@@ -39,6 +58,26 @@ pub fn spawn_map(
 						},
 					})
 					.insert_bundle(PickableBundle::default())
+					.with_children(|parent| {
+						parent
+							.spawn_bundle(SpriteSheetBundle {
+								// mesh: prefab_mesh.clone(),
+								texture_atlas: prefabs_atlas.clone(),
+								sprite: TextureAtlasSprite::new(0),
+								transform: Transform {
+									translation: Vec3::new(0.0, 8.1, 0.0),
+									rotation: Quat::from_rotation_x(-90f32.to_radians())
+										* Quat::from_rotation_z(-90f32.to_radians()),
+									scale: Vec3::splat(1.0 / 16.0),
+								},
+								visible: Visible {
+									is_transparent: true,
+									is_visible: true,
+								},
+								..Default::default()
+							})
+							.insert(PrefabIcon);
+					})
 					.id(),
 			);
 		}
@@ -63,20 +102,42 @@ pub struct PillarBundle {
 	pub mesh: PbrBundle,
 }
 
-impl Pillar {
-	pub fn update(&self, map: &Map, transform: &mut Transform) {
-		let height = map.heights.0[self.1][self.0].0;
-		transform.translation.x = self.0 as f32 * BOX_SCALE;
-		transform.translation.z = self.1 as f32 * BOX_SCALE;
-		transform.translation.y = height as f32 * BOX_SCALE;
-	}
-}
-
 pub fn update_map_display(
 	map: Res<MapResource>,
 	mut query: Query<(&Pillar, &mut Transform)>,
 ) {
 	for (pillar, mut transform) in query.iter_mut() {
-		pillar.update(&(*map).0, &mut transform);
+		let height = map.0.heights.0[pillar.1][pillar.0].0;
+		transform.translation.x = pillar.0 as f32 * BOX_SCALE;
+		transform.translation.z = pillar.1 as f32 * BOX_SCALE;
+		transform.translation.y = height as f32 * BOX_SCALE;
 	}
 }
+
+pub fn update_prefabs(
+	map: Res<MapResource>,
+	mut query: Query<
+		(&Parent, &mut TextureAtlasSprite, &mut Visible),
+		With<PrefabIcon>,
+	>,
+	q_parent: Query<&Pillar>,
+) {
+	for (parent, mut sprite, mut visible) in query.iter_mut() {
+		if let Ok(pillar) = q_parent.get(parent.0) {
+			let prefab = &map.0.prefabs.0[pillar.1][pillar.0];
+			sprite.index = match prefab {
+				Prefab::None => 4,
+				Prefab::Melee => 4,
+				Prefab::Projectile => 3,
+				Prefab::JumpPad => 2,
+				Prefab::Stairs => 1,
+				Prefab::Hideous => 0,
+			};
+			visible.is_visible = prefab != &Prefab::None;
+		}
+	}
+}
+
+struct PrefabAtlas(Handle<TextureAtlas>);
+
+pub struct PrefabIcon;

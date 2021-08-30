@@ -65,8 +65,8 @@ const MENU_BUTTONS: [MenuButton; 4] = [
 	},
 	MenuButton {
 		kind: MenuButtonKind::Save,
-		name: "(S)ave",
-		key_code: KeyCode::S,
+		name: "sa(V)e",
+		key_code: KeyCode::V,
 	},
 	MenuButton {
 		kind: MenuButtonKind::SaveAs,
