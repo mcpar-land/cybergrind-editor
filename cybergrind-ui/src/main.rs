@@ -1,8 +1,9 @@
 use bevy::{pbr::AmbientLight, prelude::*};
 use bevy_mod_picking::*;
 use bevy_prototype_debug_lines::*;
-use controls::cursor_loop_system;
+use controls::{cursor_loop_system, scroll_edit};
 use cybergrind_core::Map;
+use files::{files_system_set, FileEvent, LoadedFile};
 use grid::draw_grid;
 use map3d::{spawn_map, update_map_display, MapResource};
 use smooth_bevy_cameras::{
@@ -11,15 +12,17 @@ use smooth_bevy_cameras::{
 	},
 	LookTransformPlugin,
 };
+use ui::{setup_ui, ui_system_set, ButtonMaterials, MenuButtonKind};
 
 mod controls;
+mod files;
 mod grid;
 mod map3d;
+mod ui;
 
-const TEST_MAP: &'static str = include_str!("../test2.gcp");
+const TEST_MAP: &'static str = include_str!("../test.gcp");
 
 fn setup(mut commands: Commands, mut ambient_light: ResMut<AmbientLight>) {
-	commands.spawn_bundle(UiCameraBundle::default());
 	ambient_light.color = Color::WHITE;
 	ambient_light.brightness = 1.0;
 	commands.spawn_bundle(LightBundle {
@@ -58,9 +61,17 @@ fn main() {
 		.add_plugin(HighlightablePickingPlugin)
 		.add_startup_system(setup.system())
 		.add_startup_system(spawn_map.system())
+		.add_startup_system(setup_ui.system())
+		.add_event::<MenuButtonKind>()
+		.add_event::<FileEvent>()
+		.init_resource::<ButtonMaterials>()
+		.init_resource::<LoadedFile>()
 		.insert_resource(MapResource(Map::from_str(TEST_MAP).unwrap()))
 		.add_system(update_map_display.system())
 		.add_system(cursor_loop_system.system())
 		.add_system(draw_grid.system())
+		.add_system(scroll_edit.system())
+		.add_system_set(ui_system_set())
+		.add_system_set(files_system_set())
 		.run();
 }

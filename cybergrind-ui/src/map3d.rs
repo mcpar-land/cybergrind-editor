@@ -2,9 +2,9 @@ use bevy::{prelude::*, render::texture::ImageType};
 use bevy_mod_picking::PickableBundle;
 use cybergrind_core::Map;
 
-pub struct MapResource(pub cybergrind_core::Map);
-
 pub const BOX_SCALE: f32 = 1.0;
+
+pub struct MapResource(pub cybergrind_core::Map);
 
 pub fn spawn_map(
 	mut commands: Commands,
@@ -54,7 +54,7 @@ pub fn spawn_map(
 		.id();
 }
 
-pub struct Pillar(usize, usize);
+pub struct Pillar(pub usize, pub usize);
 
 #[derive(Bundle)]
 pub struct PillarBundle {
