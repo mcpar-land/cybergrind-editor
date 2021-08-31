@@ -65,13 +65,13 @@ const MENU_BUTTONS: [MenuButton; 4] = [
 	},
 	MenuButton {
 		kind: MenuButtonKind::Save,
-		name: "sa(V)e",
-		key_code: KeyCode::V,
+		name: "(S)ave",
+		key_code: KeyCode::S,
 	},
 	MenuButton {
 		kind: MenuButtonKind::SaveAs,
-		name: "Save (A)s",
-		key_code: KeyCode::A,
+		name: "Sa(V)e As",
+		key_code: KeyCode::V,
 	},
 ];
 
@@ -82,6 +82,7 @@ pub fn setup_ui(
 ) {
 	commands.spawn_bundle(UiCameraBundle::default());
 
+	// Top bar menu
 	commands
 		.spawn_bundle(NodeBundle {
 			style: Style {
@@ -136,6 +137,47 @@ pub fn setup_ui(
 						});
 					});
 			}
+		});
+
+	// qwer display
+	commands
+		.spawn_bundle(NodeBundle {
+			style: Style {
+				size: Size::new(Val::Auto, Val::Auto),
+				position_type: PositionType::Absolute,
+				border: Rect::all(Val::Px(5.0)),
+				position: Rect {
+					left: Val::Px(15.0),
+					top: Val::Px(15.0 + 15.0),
+					..Default::default()
+				},
+				display: Display::Flex,
+				..Default::default()
+			},
+			material: materials.add(
+				Color::Rgba {
+					red: 0.0,
+					green: 0.0,
+					blue: 0.0,
+					alpha: 0.5,
+				}
+				.into(),
+			),
+			..Default::default()
+		})
+		.with_children(|parent| {
+			parent.spawn_bundle(TextBundle {
+				text: Text::with_section(
+					"Q - None\nW - Melee\nE - Projectile\nR - Stairs\nT - Hideous",
+					TextStyle {
+						font_size: 10.0,
+						color: Color::WHITE,
+						font: button_materials.font.clone(),
+					},
+					Default::default(),
+				),
+				..Default::default()
+			});
 		});
 }
 

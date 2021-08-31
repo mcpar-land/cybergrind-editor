@@ -20,8 +20,6 @@ mod grid;
 mod map3d;
 mod ui;
 
-const TEST_MAP: &'static str = include_str!("../test.gcp");
-
 fn setup(mut commands: Commands, mut ambient_light: ResMut<AmbientLight>) {
 	ambient_light.color = Color::WHITE;
 	ambient_light.brightness = 1.0;

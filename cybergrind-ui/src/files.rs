@@ -2,14 +2,42 @@ use std::fs::{File, OpenOptions};
 use std::io::{prelude::*, SeekFrom};
 
 use bevy::prelude::*;
-use cybergrind_core::Map;
+use cybergrind_core::{Map, Parsable};
 
 use crate::map3d::MapResource;
-pub struct LoadedFile(pub Option<File>);
+pub struct LoadedFile {
+	pub file: Option<(File, String)>,
+	pub unsaved_changes: bool,
+}
+
+impl LoadedFile {
+	pub fn window_title(&self) -> String {
+		let filename = format!(
+			"{}{}",
+			if self.unsaved_changes { "*" } else { "" },
+			if let Some((_, path)) = &self.file {
+				&path
+			} else {
+				""
+			}
+		);
+		format!(
+			"Cybergrind Editor{}",
+			if !filename.is_empty() {
+				format!(" - {}", filename)
+			} else {
+				"".to_string()
+			}
+		)
+	}
+}
 
 impl FromWorld for LoadedFile {
 	fn from_world(_: &mut World) -> Self {
-		Self(None)
+		Self {
+			file: None,
+			unsaved_changes: false,
+		}
 	}
 }
 
@@ -21,6 +49,7 @@ pub enum FileEvent {
 }
 
 fn file_event_handler_system(
+	mut windows: ResMut<Windows>,
 	mut map: ResMut<MapResource>,
 	mut loaded_file: ResMut<LoadedFile>,
 	mut ev_files: EventReader<FileEvent>,
@@ -45,7 +74,7 @@ fn file_event_handler_system(
 							Ok(map) => map,
 							Err(err) => {
 								println!("Error parsing map file: {}", err);
-								break;
+								continue;
 							}
 						};
 
@@ -53,14 +82,15 @@ fn file_event_handler_system(
 					}
 					Err(err) => {
 						println!("Error opening file: {}", err);
-						break;
+						continue;
 					}
 				};
-				loaded_file.0 = Some(file);
+				loaded_file.file = Some((file, path.to_string()));
+				loaded_file.unsaved_changes = false;
 			}
 			FileEvent::Save => {
 				println!("File event save");
-				if let Some(file) = &mut loaded_file.0 {
+				if let Some((file, _)) = &mut loaded_file.file {
 					if let Err(error) = file
 						.seek(SeekFrom::Start(0))
 						.and_then(|_| file.write(map.0.to_string().as_bytes()))
@@ -68,6 +98,7 @@ fn file_event_handler_system(
 						println!("Error saving file: {}", error);
 					} else {
 						println!("Saved file!");
+						loaded_file.unsaved_changes = false;
 					}
 				} else {
 					println!("No file open!");
@@ -75,10 +106,25 @@ fn file_event_handler_system(
 			}
 			FileEvent::SaveAs(path) => {
 				println!("File event save as");
+				let file = match File::create(path) {
+					Ok(file) => file,
+					Err(err) => {
+						println!("Error saving file as: {}", err);
+						continue;
+					}
+				};
+				loaded_file.file = Some((file, path.to_string()));
+				loaded_file.unsaved_changes = false;
 			}
 			FileEvent::New => {
 				println!("File event new");
+				map.0 = Map::default();
+				loaded_file.file = None;
+				loaded_file.unsaved_changes = false;
 			}
+		}
+		if let Some(win) = windows.get_primary_mut() {
+			win.set_title(loaded_file.window_title());
 		}
 	}
 }
