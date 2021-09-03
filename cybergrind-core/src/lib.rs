@@ -59,6 +59,23 @@ impl ToString for Map {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Grid<T: Parsable>(pub [[T; 16]; 16]);
 
+impl<T: Parsable> Grid<T> {
+	pub fn get(&self, x: usize, y: usize) -> Option<&T> {
+		if x >= 16 || y >= 16 {
+			None
+		} else {
+			Some(&self.0[y][x])
+		}
+	}
+	pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T> {
+		if x >= 16 || y >= 16 {
+			None
+		} else {
+			Some(&mut self.0[y][x])
+		}
+	}
+}
+
 impl<T: Parsable + Copy> Parsable for Grid<T> {
 	fn parse(input: &str) -> nom::IResult<&str, Self> {
 		fn to_array<T, const N: usize>(v: Vec<T>) -> [T; N] {

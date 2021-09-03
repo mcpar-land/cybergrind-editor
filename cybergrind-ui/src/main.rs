@@ -5,6 +5,7 @@ use controls::{cursor_loop_system, prefab_edit, scroll_edit};
 use cybergrind_core::{Map, Parsable};
 use files::{files_system_set, FileEvent, LoadedFile};
 use grid::draw_grid;
+use history::HistoryPlugin;
 use map3d::{spawn_map, update_map_display, update_prefabs, MapResource};
 use smooth_bevy_cameras::{
 	controllers::orbit::{
@@ -17,6 +18,7 @@ use ui::{setup_ui, ui_system_set, ButtonMaterials, MenuButtonKind};
 mod controls;
 mod files;
 mod grid;
+mod history;
 mod map3d;
 mod ui;
 
@@ -33,7 +35,6 @@ fn setup(mut commands: Commands, mut ambient_light: ResMut<AmbientLight>) {
 			OrbitCameraController {
 				mouse_rotate_sensitivity: Vec2::splat(0.003),
 				mouse_translate_sensitivity: Vec2::ZERO,
-				mouse_wheel_zoom_sensitivity: 0.0,
 				..Default::default()
 			},
 			PerspectiveCameraBundle::default(),
@@ -57,6 +58,7 @@ fn main() {
 		.add_plugin(PickingPlugin)
 		.add_plugin(InteractablePickingPlugin)
 		.add_plugin(HighlightablePickingPlugin)
+		.add_plugin(HistoryPlugin)
 		.add_startup_system(setup.system())
 		.add_startup_system(spawn_map.system())
 		.add_startup_system(setup_ui.system())

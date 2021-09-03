@@ -2,14 +2,17 @@ use bevy::{input::mouse::MouseWheel, prelude::*};
 use bevy_mod_picking::Selection;
 use cybergrind_core::Prefab;
 
-use crate::map3d::{MapResource, Pillar};
+use crate::{
+	history::{Edit, EditData},
+	map3d::{MapResource, Pillar},
+};
 
 pub fn cursor_loop_system(
 	key: Res<Input<KeyCode>>,
 	mut windows: ResMut<Windows>,
 ) {
 	let win = windows.get_primary_mut().expect("no primary window");
-	if key.pressed(KeyCode::LControl) {
+	if key.pressed(KeyCode::LAlt) {
 		win.set_cursor_lock_mode(true);
 		let mouse_pos = win.cursor_position();
 		let win_height = win.physical_height() as f32;
@@ -31,32 +34,40 @@ pub fn cursor_loop_system(
 }
 
 pub fn scroll_edit(
+	key: Res<Input<KeyCode>>,
 	mut mouse_wheel_events: EventReader<MouseWheel>,
-	mut map: ResMut<MapResource>,
+	// mut map: ResMut<MapResource>,
+	mut edit_events: EventWriter<Edit>,
 	query: Query<(&Selection, &Pillar)>,
 ) {
-	for event in mouse_wheel_events.iter() {
-		let move_delta: i8 = if event.y > 0.0 {
-			1
-		} else if event.y < 0.0 {
-			-1
-		} else {
-			0
-		};
+	if !key.pressed(KeyCode::LAlt) {
+		for event in mouse_wheel_events.iter() {
+			let move_delta: i8 = if event.y > 0.0 {
+				1
+			} else if event.y < 0.0 {
+				-1
+			} else {
+				0
+			};
 
-		for (selection, Pillar(x, y)) in query.iter() {
-			if selection.selected() {
-				let mut val = map.0.heights.0[*y][*x].0;
-				val = val.clamp(-50, 50) + move_delta;
-				map.0.heights.0[*y][*x].0 = val;
-			}
+			let squares = query
+				.iter()
+				.filter(|(s, _)| s.selected())
+				.map(|(_, Pillar(x, y))| (*x, *y))
+				.collect::<Vec<(usize, usize)>>();
+
+			edit_events.send(Edit {
+				data: EditData::Height(move_delta),
+				squares,
+			});
 		}
 	}
 }
 
 pub fn prefab_edit(
 	key: Res<Input<KeyCode>>,
-	mut map: ResMut<MapResource>,
+	mut edit_events: EventWriter<Edit>,
+	map: Res<MapResource>,
 	query: Query<(&Selection, &Pillar)>,
 ) {
 	for pressed in key.get_just_pressed() {
@@ -71,10 +82,18 @@ pub fn prefab_edit(
 			}
 		};
 		println!("Button press for setting prefab {:?}", prefab);
-		for (selection, Pillar(x, y)) in query.iter() {
-			if selection.selected() {
-				map.0.prefabs.0[*y][*x] = prefab;
-			}
-		}
+
+		let (squares, from): (Vec<(usize, usize)>, Vec<Prefab>) = query
+			.iter()
+			.filter(|(s, _)| s.selected())
+			.map(|(_, Pillar(x, y))| {
+				((*x, *y), map.0.prefabs.get(*x, *y).unwrap().clone())
+			})
+			.unzip();
+
+		edit_events.send(Edit {
+			data: EditData::Prefab { from, to: prefab },
+			squares,
+		});
 	}
 }

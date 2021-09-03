@@ -70,8 +70,8 @@ const MENU_BUTTONS: [MenuButton; 4] = [
 	},
 	MenuButton {
 		kind: MenuButtonKind::SaveAs,
-		name: "Sa(V)e As",
-		key_code: KeyCode::V,
+		name: "Save (A)s",
+		key_code: KeyCode::A,
 	},
 ];
 
@@ -223,7 +223,9 @@ pub fn menu_button_shortcut_system(
 	let win = windows.get_primary().expect("no primary window");
 	if win.is_focused() {
 		for menu_button in MENU_BUTTONS.iter() {
-			if key.just_pressed(menu_button.key_code) {
+			if key.just_pressed(menu_button.key_code)
+				&& key.pressed(KeyCode::LControl)
+			{
 				ev_menu_button.send(menu_button.kind.clone());
 			}
 		}
