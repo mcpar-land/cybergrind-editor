@@ -267,7 +267,7 @@ fn menu_button_handler_system(
 	loaded_file: Res<LoadedFile>,
 	mut dialog: ResMut<Dialog>,
 ) {
-	fn dialog_unsaved(action: &str, button: &str, dispatch: FileEvent) -> Dialog {
+	fn dialog_unsaved(button: &str, action: &str, dispatch: FileEvent) -> Dialog {
 		Dialog {
 			active: true,
 			title: format!("Unsaved Changes"),

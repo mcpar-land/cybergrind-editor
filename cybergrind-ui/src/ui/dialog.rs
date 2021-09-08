@@ -56,23 +56,28 @@ pub fn dialog_system(
 	mut ev_dialog: EventWriter<DialogDispatch>,
 ) {
 	if dialog.active {
-		egui::Window::new(&dialog.title).show(egui_ctx.ctx(), |ui| {
-			ui.vertical(|ui| {
-				ui.label(&dialog.text);
-				ui.horizontal(|ui| {
-					if ui.button(&dialog.button_left.text).clicked() {
-						ev_dialog.send(dialog.button_left.dispatch.clone());
-						dialog.close();
-					}
-					if let Some(right) = &dialog.button_right {
-						if ui.button(&right.text).clicked() {
-							ev_dialog.send(right.dispatch.clone());
+		egui::Window::new(&dialog.title)
+			.collapsible(false)
+			.resizable(false)
+			.anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
+			.show(egui_ctx.ctx(), |ui| {
+				ui.vertical_centered(|ui| {
+					ui.label(&dialog.text);
+					ui.horizontal(|ui| {
+						if ui.button(&dialog.button_left.text).clicked() {
+							ev_dialog.send(dialog.button_left.dispatch.clone());
 							dialog.close();
 						}
-					}
-				});
-			})
-		});
+						if let Some(right) = &dialog.button_right {
+							if ui.button(&right.text).clicked() {
+								ev_dialog.send(right.dispatch.clone());
+								dialog.close();
+							}
+						}
+						ui.shrink_width_to_current();
+					});
+				})
+			});
 	}
 }
 
