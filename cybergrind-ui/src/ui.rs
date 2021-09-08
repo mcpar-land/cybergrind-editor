@@ -1,6 +1,27 @@
 use bevy::prelude::*;
 
-use crate::files::FileEvent;
+use crate::{
+	files::{FileEvent, LoadedFile},
+	ui::dialog::{Dialog, DialogButton, DialogDispatch},
+};
+
+use self::dialog::setup_dialog;
+
+pub mod dialog;
+
+static HELP_TEXT: &'static str = r#"Q: None
+W: Melee
+E: Projectile
+R: Stairs
+T: Hideous
+
+Ctrl + Z: Undo
+Ctrl + N: New
+Ctrl + S: Save
+Ctrl + A: Save As
+
+Alt: Rotate
+Alt + Scroll: Zoom"#;
 
 pub struct ButtonMaterials {
 	normal: Handle<ColorMaterial>,
@@ -78,9 +99,15 @@ const MENU_BUTTONS: [MenuButton; 4] = [
 pub fn setup_ui(
 	mut commands: Commands,
 	mut materials: ResMut<Assets<ColorMaterial>>,
+	mut windows: ResMut<Windows>,
+	loaded_file: Res<LoadedFile>,
 	button_materials: Res<ButtonMaterials>,
 ) {
 	commands.spawn_bundle(UiCameraBundle::default());
+
+	if let Some(win) = windows.get_primary_mut() {
+		win.set_title(loaded_file.window_title());
+	}
 
 	// Top bar menu
 	commands
@@ -168,7 +195,7 @@ pub fn setup_ui(
 		.with_children(|parent| {
 			parent.spawn_bundle(TextBundle {
 				text: Text::with_section(
-					"Q - None\nW - Melee\nE - Projectile\nR - Stairs\nT - Hideous",
+					HELP_TEXT,
 					TextStyle {
 						font_size: 10.0,
 						color: Color::WHITE,
@@ -179,6 +206,8 @@ pub fn setup_ui(
 				..Default::default()
 			});
 		});
+
+	setup_dialog(commands);
 }
 
 fn update_button_color(
@@ -235,29 +264,52 @@ pub fn menu_button_shortcut_system(
 fn menu_button_handler_system(
 	mut ev_menu_button: EventReader<MenuButtonKind>,
 	mut ev_files: EventWriter<FileEvent>,
+	loaded_file: Res<LoadedFile>,
+	mut dialog: ResMut<Dialog>,
 ) {
+	fn dialog_unsaved(action: &str, button: &str, dispatch: FileEvent) -> Dialog {
+		Dialog {
+			active: true,
+			title: format!("Unsaved Changes"),
+			text: format!(
+				"You have unsaved changes! Are you sure you want to {}?",
+				action
+			),
+			button_left: DialogButton {
+				text: format!("{}", button),
+				dispatch: DialogDispatch::File(dispatch),
+			},
+			button_right: Some(DialogButton {
+				text: "Cancel".to_string(),
+				dispatch: DialogDispatch::Close,
+			}),
+		}
+	}
+
 	for ev in ev_menu_button.iter() {
-		match ev {
-			MenuButtonKind::Open => {
-				let res =
-					nfd::open_file_dialog(None, None).expect("Error opening file dialog");
-				if let nfd::Response::Okay(res) = res {
-					ev_files.send(FileEvent::Open(res));
+		if loaded_file.unsaved_changes {
+			match ev {
+				MenuButtonKind::New => {
+					*dialog = dialog_unsaved("New", "create a new file", FileEvent::New);
 				}
-			}
-			MenuButtonKind::Save => {
-				ev_files.send(FileEvent::Save);
-			}
-			MenuButtonKind::New => {
-				ev_files.send(FileEvent::New);
-			}
-			MenuButtonKind::SaveAs => {
-				let res =
-					nfd::open_file_dialog(None, None).expect("Error opening file dialog");
-				if let nfd::Response::Okay(res) = res {
-					ev_files.send(FileEvent::SaveAs(res));
+				MenuButtonKind::Open => {
+					*dialog =
+						dialog_unsaved("Open", "open another file", FileEvent::Open);
 				}
-			}
+				MenuButtonKind::Save => {
+					ev_files.send(FileEvent::Save);
+				}
+				MenuButtonKind::SaveAs => {
+					ev_files.send(FileEvent::SaveAs);
+				}
+			};
+		} else {
+			ev_files.send(match ev {
+				MenuButtonKind::Open => FileEvent::Open,
+				MenuButtonKind::Save => FileEvent::Save,
+				MenuButtonKind::New => FileEvent::New,
+				MenuButtonKind::SaveAs => FileEvent::SaveAs,
+			})
 		}
 	}
 }

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use cybergrind_core::{Map, Prefab};
 
-use crate::map3d::MapResource;
+use crate::{files::LoadedFile, map3d::MapResource};
 
 #[derive(Clone, Debug)]
 pub enum EditData {
@@ -71,20 +71,39 @@ pub struct HistoryStack {
 }
 
 impl HistoryStack {
-	pub fn push(&mut self, edit: Edit, map: &mut Map) {
+	pub fn push(
+		&mut self,
+		edit: Edit,
+		map: &mut Map,
+		loaded_file: &mut LoadedFile,
+		window: Option<&mut Window>,
+	) {
 		if edit.apply(map) {
 			if self.stack.len() >= MAX_UNDO_HISTORY {
 				self.stack.remove(0);
 			}
 			self.stack.push(edit);
+			loaded_file.unsaved_changes = true;
+			if let Some(win) = window {
+				win.set_title(loaded_file.window_title());
+			}
 		// println!("Pushed to history (len is now: {})", self.stack.len());
 		} else {
 			// println!("Tried to do a redundant edit, no history pushed");
 		}
 	}
-	pub fn pop(&mut self, map: &mut Map) {
+	pub fn pop(
+		&mut self,
+		map: &mut Map,
+		loaded_file: &mut LoadedFile,
+		window: Option<&mut Window>,
+	) {
 		if let Some(pop) = self.stack.pop() {
 			pop.undo(map);
+			loaded_file.unsaved_changes = true;
+			if let Some(win) = window {
+				win.set_title(loaded_file.window_title());
+			}
 		}
 	}
 }
@@ -93,9 +112,16 @@ fn edit_with_history(
 	mut edit_events: EventReader<Edit>,
 	mut map: ResMut<MapResource>,
 	mut history: ResMut<HistoryStack>,
+	mut loaded_file: ResMut<LoadedFile>,
+	mut windows: ResMut<Windows>,
 ) {
 	for event in edit_events.iter() {
-		history.push(event.clone(), &mut map.0);
+		history.push(
+			event.clone(),
+			&mut map.0,
+			&mut loaded_file,
+			windows.get_primary_mut(),
+		);
 	}
 }
 
@@ -103,9 +129,11 @@ fn undo_handler(
 	mut history: ResMut<HistoryStack>,
 	mut map: ResMut<MapResource>,
 	key: Res<Input<KeyCode>>,
+	mut loaded_file: ResMut<LoadedFile>,
+	mut windows: ResMut<Windows>,
 ) {
 	if key.pressed(KeyCode::LControl) && key.just_pressed(KeyCode::Z) {
-		history.pop(&mut map.0);
+		history.pop(&mut map.0, &mut loaded_file, windows.get_primary_mut());
 	}
 }
 

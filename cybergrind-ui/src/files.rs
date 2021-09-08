@@ -41,10 +41,11 @@ impl FromWorld for LoadedFile {
 	}
 }
 
+#[derive(Clone)]
 pub enum FileEvent {
-	Open(String),
+	Open,
 	Save,
-	SaveAs(String),
+	SaveAs,
 	New,
 }
 
@@ -54,75 +55,95 @@ fn file_event_handler_system(
 	mut loaded_file: ResMut<LoadedFile>,
 	mut ev_files: EventReader<FileEvent>,
 ) {
-	for event in ev_files.iter() {
-		match event {
-			FileEvent::Open(path) => {
-				println!("File event open");
-				let file = match OpenOptions::new()
-					.read(true)
-					.write(true)
-					.append(false)
-					.open(&path)
-				{
-					Ok(mut file) => {
-						let mut contents = String::new();
-						if let Err(err) = file.read_to_string(&mut contents) {
-							println!("Error reading file: {}", err);
+	fn open(loaded_file: &mut LoadedFile, map: &mut MapResource) {
+		println!("File event open");
+
+		if let nfd::Response::Okay(path) =
+			nfd::dialog().open().expect("Error opening file dialog")
+		{
+			let file = match OpenOptions::new()
+				.read(true)
+				.write(true)
+				.append(false)
+				.open(&path)
+			{
+				Ok(mut file) => {
+					let mut contents = String::new();
+					if let Err(err) = file.read_to_string(&mut contents) {
+						println!("Error reading file: {}", err);
+					}
+
+					map.0 = match Map::from_str(&contents) {
+						Ok(map) => map,
+						Err(err) => {
+							println!("Error parsing map file: {}", err);
+							return;
 						}
+					};
 
-						map.0 = match Map::from_str(&contents) {
-							Ok(map) => map,
-							Err(err) => {
-								println!("Error parsing map file: {}", err);
-								continue;
-							}
-						};
-
-						file
-					}
-					Err(err) => {
-						println!("Error opening file: {}", err);
-						continue;
-					}
-				};
-				loaded_file.file = Some((file, path.to_string()));
-				loaded_file.unsaved_changes = false;
-			}
-			FileEvent::Save => {
-				println!("File event save");
-				if let Some((file, _)) = &mut loaded_file.file {
-					if let Err(error) = file
-						.seek(SeekFrom::Start(0))
-						.and_then(|_| file.write(map.0.to_string().as_bytes()))
-					{
-						println!("Error saving file: {}", error);
-					} else {
-						println!("Saved file!");
-						loaded_file.unsaved_changes = false;
-					}
-				} else {
-					println!("No file open!");
+					file
 				}
-			}
-			FileEvent::SaveAs(path) => {
-				println!("File event save as");
-				let file = match File::create(path) {
-					Ok(file) => file,
-					Err(err) => {
-						println!("Error saving file as: {}", err);
-						continue;
-					}
-				};
-				loaded_file.file = Some((file, path.to_string()));
-				loaded_file.unsaved_changes = false;
-			}
-			FileEvent::New => {
-				println!("File event new");
-				map.0 = Map::default();
-				loaded_file.file = None;
-				loaded_file.unsaved_changes = false;
-			}
+				Err(err) => {
+					println!("Error opening file: {}", err);
+					return;
+				}
+			};
+			loaded_file.file = Some((file, path));
+			loaded_file.unsaved_changes = false;
 		}
+	}
+	fn new(loaded_file: &mut LoadedFile, map: &mut MapResource) {
+		println!("File event new");
+		map.0 = Map::default();
+		loaded_file.file = None;
+		loaded_file.unsaved_changes = false;
+	}
+
+	fn save(loaded_file: &mut LoadedFile, map: &mut MapResource) {
+		println!("File event save");
+		if let Some((file, _)) = &mut loaded_file.file {
+			if let Err(error) = file
+				.seek(SeekFrom::Start(0))
+				.and_then(|_| file.write(map.0.to_string().as_bytes()))
+			{
+				println!("Error saving file: {}", error);
+			} else {
+				println!("Saved file!");
+				loaded_file.unsaved_changes = false;
+			}
+		} else {
+			println!("No file open!");
+			save_as(loaded_file, map);
+		}
+	}
+
+	fn save_as(loaded_file: &mut LoadedFile, map: &mut MapResource) {
+		println!("File event save as");
+		if let nfd::Response::Okay(path) =
+			nfd::open_save_dialog(None, None).expect("Error opening file dialog")
+		{
+			let file = match File::create(path.clone()) {
+				Ok(file) => file,
+				Err(err) => {
+					println!("Error saving file as: {}", err);
+					return;
+				}
+			};
+
+			loaded_file.file = Some((file, path));
+			loaded_file.unsaved_changes = false;
+			save(loaded_file, map);
+		}
+	}
+
+	for event in ev_files.iter() {
+		let h = match event {
+			FileEvent::Open => open,
+			FileEvent::Save => save,
+			FileEvent::SaveAs => save_as,
+			FileEvent::New => new,
+		};
+		h(&mut loaded_file, &mut map);
 		if let Some(win) = windows.get_primary_mut() {
 			win.set_title(loaded_file.window_title());
 		}

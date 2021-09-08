@@ -366,9 +366,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_egui"
-version = "0.6.2"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb6d7ab5bd9077a6d2608e5fbc23f60688ba1e026c3cfe81656381863b29e7a7"
+checksum = "d75b0b49b2598a3639b408fb58039b3db7038a158cf6375ce07d4ad1015ead18"
 dependencies = [
  "bevy",
  "clipboard",
@@ -500,6 +500,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b699d78034aaf5730a4c10a09fd5a2e6886964a42fa7453b9e5f8b926cd846e"
 dependencies = [
  "bevy",
+]
+
+[[package]]
+name = "bevy_obj"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0ddddf281a90e0c18bcc5cdfa5b3666419b93e4f1c74e5bbcf33a96617742df"
+dependencies = [
+ "anyhow",
+ "bevy_app",
+ "bevy_asset",
+ "bevy_render",
+ "bevy_utils",
+ "obj-rs",
+ "thiserror",
 ]
 
 [[package]]
@@ -1207,6 +1222,7 @@ dependencies = [
  "bevy",
  "bevy_egui",
  "bevy_mod_picking",
+ "bevy_obj",
  "bevy_prototype_debug_lines",
  "cybergrind-core",
  "nfd",
@@ -1300,18 +1316,18 @@ checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 
 [[package]]
 name = "egui"
-version = "0.13.1"
+version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77f9b394ccacc0cccb30f6de7371038a116931aa3186acd908b9ec61f405f15c"
+checksum = "b403f29d592b5c2267279bfdf2cd3fe3ba0e7a8738d03203a6f1536e8e9d26bd"
 dependencies = [
  "epaint",
 ]
 
 [[package]]
 name = "emath"
-version = "0.13.0"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80eea7508c08a7b4e2a041adcdca6f400d8606622c6bb980ecbbdc5f1aff9a4c"
+checksum = "cca5179aa9d15128cebb79bb56dda73a79cc66b402056ff19a992e54b365e15c"
 
 [[package]]
 name = "env_logger"
@@ -1325,9 +1341,9 @@ dependencies = [
 
 [[package]]
 name = "epaint"
-version = "0.13.0"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "132e30d483d9fa252fe06aa112de777d068503c379fa51bc5834204ee3258fce"
+checksum = "136e7d88da926182bcfdb8217137dd347dfe5dc03b8988eaba3ef8becf83394a"
 dependencies = [
  "ab_glyph",
  "ahash 0.7.4",
@@ -1450,15 +1466,15 @@ checksum = "3dcaa9ae7725d12cdb85b3ad99a434db70b468c09ded17e012d86b5c1010f7a7"
 
 [[package]]
 name = "futures-core"
-version = "0.3.16"
+version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af51b1b4a7fdff033703db39de8802c673eb91855f2e0d47dcf3bf2c0ef01f99"
+checksum = "88d1c26957f23603395cd326b0ffe64124b818f4449552f960d815cfba83a53d"
 
 [[package]]
 name = "futures-io"
-version = "0.3.16"
+version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b0e06c393068f3a6ef246c75cdca793d6a46347e75286933e5e75fd2fd11582"
+checksum = "522de2a0fe3e380f1bc577ba0474108faf3f6b18321dbf60b3b9c39a75073377"
 
 [[package]]
 name = "futures-lite"
@@ -2570,6 +2586,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "obj-rs"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21fb5f56c5833319f6cb0714a9548853ee4ef745a2c4136da82343c7bd1ae14c"
+dependencies = [
+ "num-traits",
+ "vec_map",
 ]
 
 [[package]]

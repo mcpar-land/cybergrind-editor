@@ -13,4 +13,5 @@ smooth-bevy-cameras = { git = "https://github.com/mcpar-land/smooth-bevy-cameras
 bevy_mod_picking = { git = "https://github.com/mcpar-land/bevy_mod_picking.git", branch = "0.4.0" }
 bevy_prototype_debug_lines = "0.3.3"
 nfd = "0.0.4"
-bevy_egui = "0.6"
+bevy_egui = "0.7.0"
+bevy_obj = "0.5.1"

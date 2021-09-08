@@ -64,6 +64,43 @@ pub fn scroll_edit(
 	}
 }
 
+pub fn number_edit(
+	keys: Res<Input<KeyCode>>,
+	mut edit_events: EventWriter<Edit>,
+	query: Query<(&Selection, &Pillar)>,
+) {
+	for key in keys.get_just_pressed() {
+		let mut offset: i8 = match key {
+			KeyCode::Key1 => 1,
+			KeyCode::Key2 => 2,
+			KeyCode::Key3 => 3,
+			KeyCode::Key4 => 4,
+			KeyCode::Key5 => 5,
+			KeyCode::Key6 => 6,
+			KeyCode::Key7 => 7,
+			KeyCode::Key8 => 8,
+			KeyCode::Key9 => 9,
+			KeyCode::Key0 => 10,
+			_ => {
+				continue;
+			}
+		};
+		if keys.pressed(KeyCode::LShift) {
+			offset = -offset;
+		}
+		let squares = query
+			.iter()
+			.filter(|(s, _)| s.selected())
+			.map(|(_, Pillar(x, y))| (*x, *y))
+			.collect::<Vec<(usize, usize)>>();
+
+		edit_events.send(Edit {
+			data: EditData::Height(offset),
+			squares,
+		});
+	}
+}
+
 pub fn prefab_edit(
 	key: Res<Input<KeyCode>>,
 	mut edit_events: EventWriter<Edit>,
@@ -96,4 +133,12 @@ pub fn prefab_edit(
 			squares,
 		});
 	}
+}
+
+pub fn controls_system_set() -> SystemSet {
+	SystemSet::new()
+		.with_system(cursor_loop_system.system())
+		.with_system(scroll_edit.system())
+		.with_system(number_edit.system())
+		.with_system(prefab_edit.system())
 }
