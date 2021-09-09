@@ -1,16 +1,17 @@
-use bevy::{pbr::AmbientLight, prelude::*};
-use bevy_egui::{EguiContext, EguiPlugin};
-use bevy_mod_picking::*;
+use bevy::{
+	diagnostic::FrameTimeDiagnosticsPlugin, pbr::AmbientLight, prelude::*,
+};
+use bevy_egui::EguiPlugin;
+use bevy_mod_raycast::RayCastSource;
 use bevy_obj::ObjPlugin;
 use bevy_prototype_debug_lines::*;
-use controls::{
-	controls_system_set, cursor_loop_system, prefab_edit, scroll_edit,
-};
+use controls::controls_system_set;
 use cybergrind_core::{Map, Parsable};
 use files::{files_system_set, FileEvent, LoadedFile};
 use grid::draw_grid;
 use history::HistoryPlugin;
 use map3d::{spawn_map, update_map_display, update_prefabs, MapResource};
+use selection::{SelectableRaycastSet, SelectionPlugin};
 use smooth_bevy_cameras::{
 	controllers::orbit::{
 		OrbitCameraBundle, OrbitCameraController, OrbitCameraPlugin,
@@ -28,7 +29,9 @@ mod grid;
 mod history;
 mod map3d;
 mod pillar_mesh;
+mod selection;
 mod ui;
+mod util;
 
 fn setup(mut commands: Commands, mut ambient_light: ResMut<AmbientLight>) {
 	ambient_light.color = Color::WHITE;
@@ -49,15 +52,17 @@ fn setup(mut commands: Commands, mut ambient_light: ResMut<AmbientLight>) {
 			Vec3::new(-16.0, 16.0, -16.0),
 			Vec3::new(0.0, 0.0, 0.0),
 		))
-		.insert_bundle(PickingCameraBundle::default());
+		.insert(RayCastSource::<SelectableRaycastSet>::new());
 }
 
 fn main() {
 	App::build()
 		.insert_resource(Msaa { samples: 4 })
 		.add_plugins(DefaultPlugins)
+		.add_plugin(FrameTimeDiagnosticsPlugin)
 		.add_plugin(DebugLinesPlugin)
 		.add_plugin(EguiPlugin)
+		.add_plugin(SelectionPlugin)
 		.insert_resource(DebugLines {
 			depth_test: true,
 			..Default::default()
@@ -65,9 +70,6 @@ fn main() {
 		.add_plugin(ObjPlugin)
 		.add_plugin(LookTransformPlugin)
 		.add_plugin(OrbitCameraPlugin)
-		.add_plugin(PickingPlugin)
-		.add_plugin(InteractablePickingPlugin)
-		.add_plugin(HighlightablePickingPlugin)
 		.add_plugin(HistoryPlugin)
 		.init_resource::<LoadedFile>()
 		.init_resource::<ButtonMaterials>()

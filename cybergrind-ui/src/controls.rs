@@ -1,10 +1,10 @@
 use bevy::{input::mouse::MouseWheel, prelude::*};
-use bevy_mod_picking::Selection;
 use cybergrind_core::Prefab;
 
 use crate::{
 	history::{Edit, EditData},
 	map3d::{MapResource, Pillar},
+	selection::Selectable,
 };
 
 pub fn cursor_loop_system(
@@ -38,7 +38,7 @@ pub fn scroll_edit(
 	mut mouse_wheel_events: EventReader<MouseWheel>,
 	// mut map: ResMut<MapResource>,
 	mut edit_events: EventWriter<Edit>,
-	query: Query<(&Selection, &Pillar)>,
+	query: Query<(&Selectable, &Pillar)>,
 ) {
 	if !key.pressed(KeyCode::LAlt) {
 		for event in mouse_wheel_events.iter() {
@@ -67,7 +67,7 @@ pub fn scroll_edit(
 pub fn number_edit(
 	keys: Res<Input<KeyCode>>,
 	mut edit_events: EventWriter<Edit>,
-	query: Query<(&Selection, &Pillar)>,
+	query: Query<(&Selectable, &Pillar)>,
 ) {
 	for key in keys.get_just_pressed() {
 		let mut offset: i8 = match key {
@@ -105,7 +105,7 @@ pub fn prefab_edit(
 	key: Res<Input<KeyCode>>,
 	mut edit_events: EventWriter<Edit>,
 	map: Res<MapResource>,
-	query: Query<(&Selection, &Pillar)>,
+	query: Query<(&Selectable, &Pillar)>,
 ) {
 	for pressed in key.get_just_pressed() {
 		let prefab = match pressed {

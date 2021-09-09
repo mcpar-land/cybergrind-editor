@@ -1,4 +1,8 @@
-use bevy::prelude::*;
+use bevy::{
+	diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
+	prelude::*,
+};
+use bevy_egui::{egui, EguiContext};
 
 use crate::{
 	files::{FileEvent, LoadedFile},
@@ -314,10 +318,21 @@ fn menu_button_handler_system(
 	}
 }
 
+pub fn fps_system(diagnostics: Res<Diagnostics>, egui_ctx: Res<EguiContext>) {
+	if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
+		if let Some(fps) = fps.value() {
+			egui::Window::new("FPS").show(egui_ctx.ctx(), |ui| {
+				ui.label(&fps.to_string());
+			});
+		}
+	}
+}
+
 pub fn ui_system_set() -> SystemSet {
 	SystemSet::new()
 		.with_system(button_color_system.system())
 		.with_system(menu_button_click_system.system())
 		.with_system(menu_button_shortcut_system.system())
 		.with_system(menu_button_handler_system.system())
+		.with_system(fps_system.system())
 }

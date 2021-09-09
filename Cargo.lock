@@ -485,15 +485,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_mod_picking"
-version = "0.4.0"
-source = "git+https://github.com/mcpar-land/bevy_mod_picking.git?branch=0.4.0#9efd0d93b5a7a9c8e79068f0408d90c5c8ac02b6"
-dependencies = [
- "bevy",
- "bevy_mod_raycast",
-]
-
-[[package]]
 name = "bevy_mod_raycast"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1221,7 +1212,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_egui",
- "bevy_mod_picking",
+ "bevy_mod_raycast",
  "bevy_obj",
  "bevy_prototype_debug_lines",
  "cybergrind-core",

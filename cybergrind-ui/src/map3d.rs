@@ -1,10 +1,17 @@
 use bevy::{prelude::*, render::texture::ImageType};
-use bevy_mod_picking::PickableBundle;
+use bevy_mod_raycast::RayCastMesh;
 use cybergrind_core::{Map, Prefab};
+
+use crate::selection::{Selectable, SelectableRaycastSet};
 
 pub const BOX_SCALE: f32 = 1.0;
 
 pub struct MapResource(pub cybergrind_core::Map);
+
+pub struct MapMaterials {
+	pub box_mat: Handle<StandardMaterial>,
+	pub box_mesh: Handle<Mesh>,
+}
 
 pub fn spawn_map(
 	mut commands: Commands,
@@ -37,7 +44,12 @@ pub fn spawn_map(
 	));
 	commands.insert_resource(PrefabAtlas(prefabs_atlas.clone()));
 
-	let prefab_mesh = meshes.add(Mesh::from(shape::Plane { size: 0.75 }));
+	commands.insert_resource(MapMaterials {
+		box_mat: box_material.clone(),
+		box_mesh: box_mesh.clone(),
+	});
+
+	// let prefab_mesh = meshes.add(Mesh::from(shape::Plane { size: 0.75 }));
 
 	let mut pillars = Vec::new();
 	for x in 0..16 {
@@ -56,8 +68,8 @@ pub fn spawn_map(
 							},
 							..Default::default()
 						},
+						..Default::default()
 					})
-					.insert_bundle(PickableBundle::default())
 					.with_children(|parent| {
 						parent
 							.spawn_bundle(SpriteSheetBundle {
@@ -93,24 +105,29 @@ pub fn spawn_map(
 		.id();
 }
 
+#[derive(Default)]
 pub struct Pillar(pub usize, pub usize);
 
-#[derive(Bundle)]
+#[derive(Bundle, Default)]
 pub struct PillarBundle {
 	pub pillar: Pillar,
 	#[bundle]
 	pub mesh: PbrBundle,
+	pub selectable: RayCastMesh<SelectableRaycastSet>,
+	pub selection: Selectable,
 }
 
 pub fn update_map_display(
 	map: Res<MapResource>,
 	mut query: Query<(&Pillar, &mut Transform)>,
 ) {
-	for (pillar, mut transform) in query.iter_mut() {
-		let height = map.0.heights.0[pillar.1][pillar.0].0;
-		transform.translation.x = pillar.0 as f32 * BOX_SCALE;
-		transform.translation.z = pillar.1 as f32 * BOX_SCALE;
-		transform.translation.y = height as f32 * BOX_SCALE;
+	if map.is_changed() {
+		for (pillar, mut transform) in query.iter_mut() {
+			let height = map.0.heights.0[pillar.1][pillar.0].0;
+			transform.translation.x = pillar.0 as f32 * BOX_SCALE;
+			transform.translation.z = pillar.1 as f32 * BOX_SCALE;
+			transform.translation.y = height as f32 * BOX_SCALE;
+		}
 	}
 }
 
@@ -122,18 +139,20 @@ pub fn update_prefabs(
 	>,
 	q_parent: Query<&Pillar>,
 ) {
-	for (parent, mut sprite, mut visible) in query.iter_mut() {
-		if let Ok(pillar) = q_parent.get(parent.0) {
-			let prefab = &map.0.prefabs.0[pillar.1][pillar.0];
-			sprite.index = match prefab {
-				Prefab::None => 4,
-				Prefab::Melee => 4,
-				Prefab::Projectile => 3,
-				Prefab::JumpPad => 2,
-				Prefab::Stairs => 1,
-				Prefab::Hideous => 0,
-			};
-			visible.is_visible = prefab != &Prefab::None;
+	if map.is_changed() {
+		for (parent, mut sprite, mut visible) in query.iter_mut() {
+			if let Ok(pillar) = q_parent.get(parent.0) {
+				let prefab = &map.0.prefabs.0[pillar.1][pillar.0];
+				sprite.index = match prefab {
+					Prefab::None => 4,
+					Prefab::Melee => 4,
+					Prefab::Projectile => 3,
+					Prefab::JumpPad => 2,
+					Prefab::Stairs => 1,
+					Prefab::Hideous => 0,
+				};
+				visible.is_visible = prefab != &Prefab::None;
+			}
 		}
 	}
 }
