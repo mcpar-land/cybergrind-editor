@@ -253,13 +253,15 @@ pub fn menu_button_shortcut_system(
 	windows: Res<Windows>,
 	mut ev_menu_button: EventWriter<MenuButtonKind>,
 ) {
-	let win = windows.get_primary().expect("no primary window");
-	if win.is_focused() {
-		for menu_button in MENU_BUTTONS.iter() {
-			if key.just_pressed(menu_button.key_code)
-				&& key.pressed(KeyCode::LControl)
-			{
-				ev_menu_button.send(menu_button.kind.clone());
+	if key.is_changed() {
+		let win = windows.get_primary().expect("no primary window");
+		if win.is_focused() {
+			for menu_button in MENU_BUTTONS.iter() {
+				if key.just_pressed(menu_button.key_code)
+					&& key.pressed(KeyCode::LControl)
+				{
+					ev_menu_button.send(menu_button.kind.clone());
+				}
 			}
 		}
 	}
@@ -318,12 +320,13 @@ fn menu_button_handler_system(
 	}
 }
 
-pub fn fps_system(diagnostics: Res<Diagnostics>, egui_ctx: Res<EguiContext>) {
+pub fn fps_system(diagnostics: Res<Diagnostics>) {
 	if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
 		if let Some(fps) = fps.value() {
-			egui::Window::new("FPS").show(egui_ctx.ctx(), |ui| {
-				ui.label(&fps.to_string());
-			});
+			println!("{}", fps as u32);
+			// egui::Window::new("FPS").show(egui_ctx.ctx(), |ui| {
+			// 	ui.label(&(fps as u32).to_string());
+			// });
 		}
 	}
 }
@@ -334,5 +337,5 @@ pub fn ui_system_set() -> SystemSet {
 		.with_system(menu_button_click_system.system())
 		.with_system(menu_button_shortcut_system.system())
 		.with_system(menu_button_handler_system.system())
-		.with_system(fps_system.system())
+	// .with_system(fps_system.system())
 }

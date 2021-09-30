@@ -1,5 +1,3 @@
-use std::ops::RangeInclusive;
-
 pub fn is_inside_box(
 	(x, y): (usize, usize),
 	((x1, y1), (x2, y2)): &((usize, usize), (usize, usize)),

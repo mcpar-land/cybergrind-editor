@@ -36,7 +36,6 @@ pub fn cursor_loop_system(
 pub fn scroll_edit(
 	key: Res<Input<KeyCode>>,
 	mut mouse_wheel_events: EventReader<MouseWheel>,
-	// mut map: ResMut<MapResource>,
 	mut edit_events: EventWriter<Edit>,
 	query: Query<(&Selectable, &Pillar)>,
 ) {

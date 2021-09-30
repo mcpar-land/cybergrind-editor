@@ -3,8 +3,6 @@ use bevy_egui::{egui, EguiContext};
 
 use crate::files::FileEvent;
 
-use super::ButtonMaterials;
-
 #[derive(Default)]
 pub struct Dialog {
 	pub active: bool,

@@ -1,8 +1,7 @@
-use std::ops::RangeInclusive;
-
 use bevy::prelude::*;
 use bevy_mod_raycast::{
 	DefaultRaycastingPlugin, RayCastMesh, RayCastMethod, RayCastSource,
+	RaycastSystem,
 };
 use bevy_prototype_debug_lines::DebugLines;
 
@@ -44,7 +43,7 @@ impl FromWorld for Selection {
 	}
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Selectable {
 	pub selected: bool,
 	pub hovered: bool,
@@ -82,11 +81,14 @@ fn raycast_handle_mouse(
 		With<RayCastMesh<SelectableRaycastSet>>,
 	>,
 ) {
-	let mouse_released = mouse_button_input.just_released(MouseButton::Left);
+	let mouse_released = mouse_button_input.just_released(MouseButton::Left)
+		|| keyboard_input.just_pressed(KeyCode::LAlt);
 	let shift = keyboard_input.pressed(KeyCode::LShift);
 	let hover_offset = Vec3::new(0.25, 0.1, 0.25);
 	for (_, mut selectable, _) in query.iter_mut() {
-		selectable.hovered = false;
+		if selectable.hovered {
+			selectable.hovered = false;
+		}
 	}
 	for pick_source in pick_source_query.iter() {
 		if let Some((entity, _)) = pick_source.intersect_top() {
@@ -103,7 +105,9 @@ fn raycast_handle_mouse(
 				// );
 				selectable.hovered = true;
 
-				if mouse_button_input.just_pressed(MouseButton::Left) {
+				if mouse_button_input.just_pressed(MouseButton::Left)
+					&& !keyboard_input.pressed(KeyCode::LAlt)
+				{
 					selection.box_select = Some(((*x, *y), (*x, *y)));
 				} else if mouse_button_input.pressed(MouseButton::Left) {
 					if let Some(box_select) = &mut selection.box_select {
@@ -144,7 +148,7 @@ fn raycast_handle_mouse(
 			} else {
 				selectable.boxed = false;
 			}
-		} else {
+		} else if selectable.boxed {
 			selectable.boxed = false;
 		}
 	}
@@ -208,8 +212,13 @@ impl Plugin for SelectionPlugin {
 	fn build(&self, app: &mut AppBuilder) {
 		app
 			.add_plugin(DefaultRaycastingPlugin::<SelectableRaycastSet>::default())
-			.add_system_to_stage(CoreStage::PreUpdate, raycast_screen_space.system())
-			.add_system_to_stage(CoreStage::Update, raycast_handle_mouse.system())
+			.add_system_to_stage(
+				CoreStage::PreUpdate,
+				raycast_screen_space
+					.system()
+					.before(RaycastSystem::BuildRays),
+			)
+			.add_system_to_stage(CoreStage::PreUpdate, raycast_handle_mouse.system())
 			.add_system_to_stage(
 				CoreStage::PostUpdate,
 				selection_material_switch.system(),
